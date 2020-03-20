@@ -1,0 +1,61 @@
+version: "3.7"
+services: 
+    db:
+        image: mysql:5.7
+        restart: always
+        networks: 
+            slims-net:
+                ipv4_address: 172.18.1.3
+        container_name: slims-db
+        env_file: 
+            - db_default.env
+        command: --sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION --max_allowed_packet=1024M
+        volumes:
+            - "./dbdata:/var/lib/mysql"
+        #ports:
+        #    - "3306:3306"
+    redis:
+        image: redis:latest
+        restart: always
+        networks: 
+            slims-net:
+                ipv4_address: 172.18.1.4
+        container_name: redis
+        #ports:
+        #    - "6379:6379"
+    app01:
+        image: slimsofficial/slims:latest
+        restart: always
+        networks: 
+            slims-net:
+                ipv4_address: 172.18.1.11
+        container_name: slims-app
+        ports:
+            - "8081:80"
+            - "443:443"
+        volumes:
+            - "./app:/var/www/html"
+            - "./conf/php/php.ini:/usr/local/etc/php/conf.d/php.ini"
+    es01:
+        image: docker.elastic.co/elasticsearch/elasticsearch:6.8.7
+        container_name: slims-es
+        environment:
+            - discovery.type=single-node
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+                #ports:
+                #- 9200:9200
+        networks:
+            slims-net:
+                ipv4_address: 172.18.1.6
+        volumes:
+            - "./esdata:/usr/share/elasticsearch/data"
+networks: 
+    slims-net:
+        name: slims-net
+        ipam:
+            driver: default
+            config:
+              - subnet: "172.18.1.0/24"
